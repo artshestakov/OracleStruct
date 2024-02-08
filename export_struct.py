@@ -3,9 +3,9 @@ import time
 import re
 import os
 
-db_user = "ASSERVER"
-db_password = "NCTASSERVER"
-db_alias = "AS_STK_TEST_4"
+db_user = input("Enter the database user: ")
+db_password = input("Enter the database password: ")
+db_alias = input("Enter the database alias: ")
 object_global_cnt = 0
 object_map = dict()
 current_dir = os.path.abspath(__file__).replace(os.path.basename(__file__), "")
