@@ -2,17 +2,17 @@ import oracledb
 import time
 import re
 import os
+import getpass
 
-db_user = input("Enter the database user: ")
-db_password = input("Enter the database password: ")
 db_alias = input("Enter the database alias: ")
-object_global_cnt = 0
+db_user = input("Enter the database user: ")
+db_password = getpass.getpass("Enter the database password: ")
+
 object_map = dict()
-current_dir = os.path.abspath(__file__).replace(os.path.basename(__file__), "")
+file_path = os.path.abspath(__file__).replace(os.path.basename(__file__), "") + "struct.sql"
 
 # ---------------------------------------------------------------------------------------
 def export(cursor, type, sql_for_objects, file):
-    global object_global_cnt
     global object_map
 
     #Запрашиваем список объектов
@@ -24,7 +24,6 @@ def export(cursor, type, sql_for_objects, file):
 
     object_cnt = len(string_list)
     object_map[type] = object_cnt
-    object_global_cnt += object_cnt
     idx = 0
 
     for object_name in string_list:
@@ -60,7 +59,7 @@ def write_db_link(file):
 def ask_continue():
     res = True
     while True:
-        letter = input("You connected to the database {} AS '{}'. Do you want to continue? (y/n): "
+        letter = input("You connected to the database {} as {}. Do you want to continue? (y/n): "
                        .format(db_alias, db_user))
         letter = str(letter.lower())
 
@@ -73,7 +72,7 @@ def ask_continue():
 # ---------------------------------------------------------------------------------------
 
 #Подключаемся к БД
-print("Connecting...")
+print("Connecting to {} as {}...".format(db_alias, db_user))
 try:
     connection = oracledb.connect(user=db_user, password=db_password, dsn=db_alias)
 except Exception as e:
@@ -86,25 +85,23 @@ if not ask_continue():
     exit(0)
 
 cursor = connection.cursor()
-file_path = current_dir + "struct.sql"
 file = open(file_path, 'w', encoding='utf-8')
 
 time_start = time.time()
-#export(cursor, "TABLE","SELECT table_name FROM user_tables ORDER BY table_name", file)
+export(cursor, "TABLE","SELECT table_name FROM user_tables ORDER BY table_name", file)
 export(cursor, "VIEW","SELECT view_name FROM user_views ORDER BY view_name", file)
-#export(cursor, "INDEX", "SELECT i.index_name FROM user_indexes i WHERE i.index_name NOT IN (SELECT p.constraint_name FROM user_constraints p WHERE p.table_name = i.table_name AND p.constraint_type IN ('P', 'U')) ORDER BY i.index_name", file)
-#export(cursor, "TYPE", "SELECT type_name, dbms_metadata.get_ddl('TYPE', type_name) FROM user_types WHERE typecode = 'OBJECT' ORDER BY type_name", file)
-#export(cursor, "TYPE", "SELECT type_name, dbms_metadata.get_ddl('TYPE', type_name) FROM user_types WHERE typecode = 'COLLECTION' ORDER BY type_name", file)
-#export(cursor, "PACKAGE_SPEC", "SELECT object_name FROM user_objects WHERE object_type = 'PACKAGE' ORDER BY object_name", file)
-#export(cursor, "PACKAGE_BODY", "SELECT object_name FROM user_objects WHERE object_type = 'PACKAGE' ORDER BY object_name", file)
-#export(cursor, "TRIGGER", "SELECT object_name FROM user_objects WHERE object_type = 'TRIGGER' AND object_name != 'TRG_INSTALL_LOG_DDL_ONL' ORDER BY object_name", file)
-#export(cursor, "SEQUENCE", "SELECT sequence_name FROM user_sequences ORDER BY sequence_name", file)
+export(cursor, "INDEX", "SELECT i.index_name FROM user_indexes i WHERE i.index_name NOT IN (SELECT p.constraint_name FROM user_constraints p WHERE p.table_name = i.table_name AND p.constraint_type IN ('P', 'U')) ORDER BY i.index_name", file)
+export(cursor, "TYPE", "SELECT type_name, dbms_metadata.get_ddl('TYPE', type_name) FROM user_types WHERE typecode = 'OBJECT' ORDER BY type_name", file)
+export(cursor, "TYPE", "SELECT type_name, dbms_metadata.get_ddl('TYPE', type_name) FROM user_types WHERE typecode = 'COLLECTION' ORDER BY type_name", file)
+export(cursor, "PACKAGE_SPEC", "SELECT object_name FROM user_objects WHERE object_type = 'PACKAGE' ORDER BY object_name", file)
+export(cursor, "PACKAGE_BODY", "SELECT object_name FROM user_objects WHERE object_type = 'PACKAGE' ORDER BY object_name", file)
+export(cursor, "TRIGGER", "SELECT object_name FROM user_objects WHERE object_type = 'TRIGGER' AND object_name != 'TRG_INSTALL_LOG_DDL_ONL' ORDER BY object_name", file)
+export(cursor, "SEQUENCE", "SELECT sequence_name FROM user_sequences ORDER BY sequence_name", file)
 write_db_link(file)
 time_diff = time.time() - time_start
 
 file.close()
-print("Finish. Exported objects {} for {} msec"
-      .format(object_global_cnt, f'{time_diff:.3f}'))
+print("\nFinish for {} msec".format(f'{time_diff:.3f}'))
 
 for map_key in object_map:
     print("{}: {}".format(map_key, object_map[map_key]))
