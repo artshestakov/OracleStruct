@@ -1,0 +1,54 @@
+SET SERVEROUTPUT ON
+SET TERMOUT ON
+SET TRIMSPOOL ON
+SET TRIMOUT ON
+SET TIME ON
+SET ECHO OFF
+SET FEEDBACK OFF
+SET HEADING OFF
+SET VERIFY OFF
+SPOOL install_script.log
+
+ACCEPT DB_ALIAS PROMPT 'Enter a server alias/connection string: ' DEFAULT ORCL
+ACCEPT DB_USER PROMPT 'Enter user name: ' DEFAULT ASSERVER
+ACCEPT DB_PASSWORD PROMPT 'Enter user password: ' DEFAULT NCTASSERVER HIDE
+CONNECT &DB_USER/&DB_PASSWORD@&DB_ALIAS
+
+timing start
+
+-- Запускаем накатку структуры
+SELECT TO_CHAR(systimestamp, 'dd.mm.yyyy hh24:mi:ss.ff3: ') || 'Run script' FROM dual;
+@.\struct.sql
+SELECT TO_CHAR(systimestamp, 'dd.mm.yyyy hh24:mi:ss.ff3: ') || 'End script' FROM dual;
+
+-- Перекомпилируем невалидные объекты
+SELECT TO_CHAR(systimestamp, 'dd.mm.yyyy hh24:mi:ss.ff3: ') || 'Run recompile schema' FROM dual;
+BEGIN
+  DBMS_UTILITY.COMPILE_SCHEMA(USER, FALSE);
+END;
+/
+SELECT TO_CHAR(systimestamp, 'dd.mm.yyyy hh24:mi:ss.ff3: ') || 'End recompile schema' FROM dual;
+
+-- Выводим инвалиды
+SELECT '============ INVALID OBJECTS ============' FROM DUAL;
+SET HEADING ON
+SET lines 256
+SET colsep "|"
+COLUMN OBJECT_NAME FORMAT a48
+COLUMN OBJECT_TYPE FORMAT a32
+COLUMN TEMPORARY FORMAT a10
+COLUMN STATUS FORMAT a8
+SELECT object_name, object_type, temporary, status
+FROM user_objects
+WHERE object_type NOT IN ('JAVA CLASS')
+AND status NOT IN ('VALID')
+AND upper(object_name) NOT LIKE '%BUS%' -- Не смотрим на инвалидные триггеры Шины
+ORDER BY status;
+
+SET HEADING OFF
+SELECT '' FROM DUAL;
+timing stop;
+SPOOL OFF
+SET TERMOUT ON
+SET ECHO ON
+EXIT

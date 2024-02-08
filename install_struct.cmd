@@ -1,0 +1,4 @@
+@ECHO OFF
+
+SET NLS_LANG=AMERICAN_AMERICA.CL8MSWIN1251
+sqlplus /NOLOG @install_struct.pdc
