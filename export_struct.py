@@ -71,6 +71,8 @@ def ask_continue():
     return res
 # ---------------------------------------------------------------------------------------
 
+oracledb.init_oracle_client()
+
 #Подключаемся к БД
 print("Connecting to {} as {}...".format(db_alias, db_user))
 try:

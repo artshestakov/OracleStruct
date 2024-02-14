@@ -7,7 +7,7 @@ SET ECHO OFF
 SET FEEDBACK OFF
 SET HEADING OFF
 SET VERIFY OFF
-SPOOL install_script.log
+SPOOL install_struct.log
 
 ACCEPT DB_ALIAS PROMPT 'Enter a server alias/connection string: ' DEFAULT ORCL
 ACCEPT DB_USER PROMPT 'Enter user name: ' DEFAULT ASSERVER
